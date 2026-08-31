@@ -10,26 +10,29 @@ async function buildReadme(): Promise<string> {
     .filter((file) => file.endsWith('.svg'))
     .sort((a, b) => a.localeCompare(b));
 
-  const cards = svgFiles
-    .map((file) => {
+  const rows: string[] = [];
+  for (let index = 0; index < svgFiles.length; index += 6) {
+    const cells = svgFiles.slice(index, index + 6).map((file) => {
       const displayName = path.parse(file).name.replace(/-/g, ' ');
-      return `
-      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; min-height:110px; padding:12px 8px; border:1px solid #e5e7eb; border-radius:12px; background:#f8fafc;">
-        <img src="./src/icons/${file}" alt="${displayName}" width="40" height="40" />
-        <span style="font-size:11px; color:#374151; text-align:center; word-break:break-word;">${displayName}</span>
-      </div>`;
-    })
-    .join('\n');
+      return `<img src="./src/icons/${file}" alt="${displayName}" width="40" height="40"><br>${displayName}`;
+    });
+    while (cells.length < 6) {
+      cells.push('');
+    }
+    rows.push(`| ${cells.join(' | ')} |`);
+  }
+
+  const gallery = [
+    '| Icon | Icon | Icon | Icon | Icon | Icon |',
+    '| --- | --- | --- | --- | --- | --- |',
+    ...rows,
+  ].join('\n');
 
   return `# Icon Collection
 
-This repo contains a curated set of SVG icons. The gallery below is automatically refreshed when new SVG files are added.
+This repo contains a curated set of SVG icons. Add new SVG files to \`src/icons\`, then run \`npm run update:icons\` to refresh this gallery.
 
-<div align="center">
-  <div style="max-width: 895px; margin: 0 auto; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 16px; align-items: stretch;">
-${cards}
-  </div>
-</div>
+${gallery}
 
 Total icons: ${svgFiles.length}
 `;
