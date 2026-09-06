@@ -1,0 +1,18 @@
+name: Build
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Activate Hermit and verify
+        shell: bash
+        run: |
+          source bin/activate-hermit
+          bash scripts/verify.sh
