@@ -1,9 +1,36 @@
-import { readdir, writeFile } from 'node:fs/promises';
+import { readFile, readdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 const ROOT = process.cwd();
 const ICONS_PATH = path.join(ROOT, 'src', 'icons');
 const README_PATH = path.join(ROOT, 'ReadMe.md');
+
+function cleanSvg(svg: string): string {
+  let cleaned = svg
+    .replace(/^\uFEFF?\s*<\?xml[\s\S]*?\?>\s*/i, '')
+    .replace(/<!--[\s\S]*?-->\s*/g, '')
+    .replace(/<title\b[^>]*>[\s\S]*?<\/title>\s*/gi, '')
+    .replace(/\s+fill\s*=\s*(?:"[^"]*"|'[^']*')/gi, '');
+
+  cleaned = cleaned.replace(/<svg\b[^>]*>/i, (root) =>
+    root.replace(
+      /\s+(?:version|id|data-name|x|y|xmlns:xlink|style|xml:space|enable-background)\s*=\s*(?:"[^"]*"|'[^']*')/gi,
+      '',
+    ),
+  );
+
+  return `${cleaned.replace(/\s+/g, ' ').trim()}\n`;
+}
+
+async function cleanIcons(svgFiles: string[]): Promise<void> {
+  await Promise.all(
+    svgFiles.map(async (file) => {
+      const filePath = path.join(ICONS_PATH, file);
+      const svg = await readFile(filePath, 'utf8');
+      await writeFile(filePath, cleanSvg(svg), 'utf8');
+    }),
+  );
+}
 
 async function buildReadme(): Promise<string> {
   const svgFiles = (await readdir(ICONS_PATH))
@@ -39,6 +66,11 @@ Total icons: ${svgFiles.length}
 }
 
 async function main(): Promise<void> {
+  const svgFiles = (await readdir(ICONS_PATH))
+    .filter((file) => file.endsWith('.svg'))
+    .sort((a, b) => a.localeCompare(b));
+
+  await cleanIcons(svgFiles);
   await writeFile(README_PATH, await buildReadme(), 'utf8');
 }
 
